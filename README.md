@@ -1,73 +1,137 @@
-# Welcome to your video chat project
+ChatVisha
+Project Overview
 
-## Project info
+ChatVisha is a web-based real-time video chat and multiplayer game platform built with React, TypeScript, Tailwind CSS, and shadcn/ui.
+It allows users to participate in video calls while playing interactive multiplayer games. The platform emphasizes modularity, responsive design, and smooth user experience for both video communication and gaming.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Features
 
-## How can I edit this code?
+Real-time video chat with multiple participants
 
-There are several ways of editing your application.
+Integrated multiplayer games, including:
 
-**Use Lovable**
+Connect Four
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Hangman
 
-Changes made via Lovable will be committed automatically to this repo.
+Memory Match
 
-**Use your preferred IDE**
+Rock Paper Scissors
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Tic Tac Toe
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Trivia Game
 
-Follow these steps:
+Word Chain
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Would You Rather
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Responsive UI built with Tailwind CSS
 
-# Step 3: Install the necessary dependencies.
-npm i
+Component-driven design using shadcn/ui for modularity
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Context-based state management for global app state
+
+Accessible and maintainable codebase with TypeScript type safety
+
+Project Structure
+src/
+├─ components/      # UI components, games, modals, video components
+├─ context/         # App context and custom hooks
+├─ pages/           # Page-level components (VideoChat, GamePlay, Lobby, etc.)
+├─ data/            # Mock data and game definitions
+├─ hooks/           # Custom hooks (e.g., use-toast, use-mobile)
+├─ lib/             # Utility functions
+├─ types/           # Type definitions
+├─ main.tsx         # Application entry point
+├─ App.tsx          # Root component
+
+
+Other key files:
+
+tailwind.config.ts — Tailwind configuration
+
+vite.config.ts — Vite configuration
+
+package.json — Project dependencies and scripts
+
+README.md — Project documentation
+
+Installation
+
+Clone the repository:
+
+git clone https://github.com/your-username/chatvisha.git
+cd chatvisha
+
+
+Install dependencies:
+
+npm install
+
+
+Start the development server:
+
 npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Open your browser and navigate to:
 
-**Use GitHub Codespaces**
+http://localhost:8080
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Available Scripts
 
-## What technologies are used for this project?
+npm run dev — Start development server with hot-reloading
 
-This project is built with:
+npm run build — Build production-ready assets
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+npm run preview — Preview production build locally
 
-## How can I deploy this project?
+npm run test — Run automated tests (Vitest)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+npm run lint — Run ESLint for code quality
 
-## Can I connect a custom domain to my Lovable project?
+Contributing
 
-Yes, you can!
+Fork the repository and create a feature branch:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+git checkout -b feature/your-feature-name
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+Make your changes and test thoroughly
+
+Commit your changes with clear messages
+
+Push your branch and create a pull request
+
+All contributions should maintain code readability, modularity, and TypeScript type safety.
+
+Technologies Used
+
+React — Frontend library for UI development
+
+TypeScript — Strongly-typed JavaScript for maintainability
+
+Tailwind CSS — Utility-first CSS framework
+
+Vite — Fast frontend build tool
+
+shadcn/ui — Component library for consistent UI
+
+React Router DOM — Client-side routing
+
+React Query (TanStack) — Data fetching and caching
+
+Vitest — Unit testing framework
+
+Notes
+
+The project uses a modular component structure to simplify maintenance and future feature expansion.
+
+All UI elements use Tailwind utility classes and adhere to responsive design principles.
+
+Video chat functionality is integrated alongside games in a flexible layout, ensuring both players maintain visibility during gameplay.
+
+License
+
+This project is licensed under the MIT License.
