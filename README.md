@@ -61,7 +61,7 @@ Installation
 
 Clone the repository:
 
-git clone https://github.com/your-username/chatvisha.git
+git clone(https://github.com/bremin184/vishachat.git).git
 cd chatvisha
 
 
