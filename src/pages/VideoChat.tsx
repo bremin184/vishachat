@@ -13,76 +13,93 @@ import {
   Send,
   X,
   Zap,
-  Bot,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { NeonButton } from '@/components/ui/NeonButton';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useApp } from '@/context/AppContext';
 import { games } from '@/data/games';
+import { DeviceCheck } from '@/components/ui/DeviceCheck';
+import { SearchingOverlay } from '@/components/ui/SearchingOverlay';
+import { VideoCall } from '@/components/ui/VideoCall';
+import { useMatchFinding } from '@/hooks/useMatchFinding';
+import { getSocket } from '@/lib/socket';
+
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: Date;
+  type: 'text' | 'system';
+}
 
 const VideoChat: React.FC = () => {
   const navigate = useNavigate();
   const { odId } = useParams();
   const { videoState, setVideoState, connectedUser, setConnectedUser } = useApp();
+  const { findMatch, cancelSearch, isSearching, match } = useMatchFinding();
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
-  const [isSearching, setIsSearching] = useState(!odId);
   const [showChat, setShowChat] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [devicesSelected, setDevicesSelected] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Refs for cleanup in useEffect
+  const matchRef = useRef(match);
+  const isSearchingRef = useRef(isSearching);
+  const localStreamRef = useRef(localStream);
 
-  // Initialize camera
+  // Update refs when state changes
   useEffect(() => {
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        setLocalStream(stream);
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error('Failed to access camera:', err);
-      }
-    };
-    initCamera();
+    matchRef.current = match;
+    isSearchingRef.current = isSearching;
+    localStreamRef.current = localStream;
+  }, [match, isSearching, localStream]);
 
-    return () => {
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
-      }
-    };
+  const handlePeerDisconnect = useCallback(() => {
+    addSystemMessage('Partner disconnected.');
+    setConnectedUser(null);
+    // Optional: Auto-skip after a delay
+    // setTimeout(handleSkip, 2000);
   }, []);
 
-  // Simulate matching
-  useEffect(() => {
-    if (odId) {
-      const user = getUserById(odId);
-      if (user) {
-        setConnectedUser(user);
-        setIsSearching(false);
-        addSystemMessage(`Connected with ${user.name}!`);
-      }
-    } else if (isSearching) {
-      const timer = setTimeout(() => {
-        const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-        setConnectedUser(randomUser);
-        setIsSearching(false);
-        addSystemMessage(`Connected with ${randomUser.name}!`);
-      }, 3000);
-      return () => clearTimeout(timer);
+  const handleDevicesReady = async (cameraId: string, micId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: cameraId },
+        audio: { deviceId: micId }
+      });
+      setLocalStream(stream);
+      setDevicesSelected(true);
+      findMatch();
+    } catch (err) {
+      console.error('Failed to access camera:', err);
     }
-  }, [odId, isSearching]);
+  };
+
+  useEffect(() => {
+    if (match) {
+      setConnectedUser({
+        id: match.peerInfo.socketId,
+        name: 'Stranger',
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${match.peerInfo.socketId}`,
+        status: 'online',
+        country: 'Unknown',
+        interests: []
+      });
+      addSystemMessage('Connected with a new match!');
+    } else {
+      setConnectedUser(null);
+    }
+  }, [match, setConnectedUser]);
 
   const addSystemMessage = (text: string) => {
     setMessages((prev) => [
@@ -137,16 +154,41 @@ const VideoChat: React.FC = () => {
   const handleSkip = () => {
     setConnectedUser(null);
     setMessages([]);
-    setIsSearching(true);
+    // If we are matched, we need to disconnect first (VideoCall unmount handles WebRTC cleanup)
+    // Then find a new match
+    findMatch();
     addSystemMessage('Searching for new match...');
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = useCallback(() => {
     if (localStream) {
       localStream.getTracks().forEach((track) => track.stop());
     }
+    if (isSearching) {
+      cancelSearch();
+    }
+    
+    const socket = getSocket();
+    if (socket && match) {
+      socket.emit('endCall', { roomId: match.roomId });
+    }
+
     navigate('/lobby');
-  };
+  }, [localStream, isSearching, cancelSearch, match, navigate]);
+
+  // Cleanup on unmount (e.g. browser back button)
+  useEffect(() => {
+    return () => {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      const socket = getSocket();
+      if (socket) {
+        if (isSearchingRef.current) socket.emit('leaveQueue');
+        if (matchRef.current) socket.emit('endCall', { roomId: matchRef.current.roomId });
+      }
+    };
+  }, []);
 
   const toggleMute = () => {
     if (localStream) {
@@ -204,51 +246,32 @@ const VideoChat: React.FC = () => {
 
         {/* Remote Video / Searching State */}
         <div className="flex-1 relative bg-gradient-to-br from-muted to-card flex items-center justify-center">
-          {isSearching ? (
-            <div className="h-full flex flex-col items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-neon animate-pulse-glow flex items-center justify-center mb-6">
-                <Video className="w-12 h-12 text-white" />
-              </div>
-              <h2 className="text-2xl font-display font-bold mb-2">Finding Someone...</h2>
-              <p className="text-muted-foreground">Please wait while we connect you</p>
-              <div className="flex gap-1 mt-4">
-                <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0s' }} />
-                <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.1s' }} />
-                <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.2s' }} />
-              </div>
-            </div>
-          ) : connectedUser ? (
-            <div className="h-full flex items-center justify-center bg-gradient-to-br from-muted to-card">
-              <div className="text-center">
-                <UserAvatar user={connectedUser} size="xl" showStatus={false} />
-                <h3 className="mt-4 text-xl font-display font-semibold">{connectedUser.name}</h3>
-                <p className="text-sm text-muted-foreground">{connectedUser.country}</p>
-              </div>
-            </div>
-          ) : null}
-        </div>
+          {!devicesSelected && (
+            <DeviceCheck 
+              onDevicesReady={handleDevicesReady} 
+              isLoading={isSearching}
+              className="z-10"
+            />
+          )}
 
-        {/* Local Video Preview */}
-        <div className={`absolute bottom-[6.5rem] right-4 rounded-2xl overflow-hidden border-2 border-primary/50 shadow-neon-purple z-20 transition-all duration-300 ease-out ${
-          showGames
-            ? 'w-16 h-20 lg:w-28 lg:h-40 lg:bottom-[5.5rem] lg:right-6'
-            : 'w-24 h-32 lg:w-40 lg:h-56 lg:bottom-[5.5rem] lg:right-6'
-        }`}>
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`w-full h-full object-cover ${isVideoOff ? 'hidden' : ''}`}
-          />
-          {isVideoOff && (
-            <div className="w-full h-full bg-card flex items-center justify-center">
-              <VideoOff className="w-8 h-8 text-muted-foreground" />
-            </div>
+          {isSearching && (
+            <SearchingOverlay onCancel={cancelSearch} />
+          )}
+
+          {match && (
+            <VideoCall 
+              match={match} 
+              localStream={localStream} 
+              onEndCall={handleEndCall}
+              onPeerDisconnect={handlePeerDisconnect}
+            />
           )}
         </div>
 
+        {/* Local Video Preview - Handled by VideoCall component now */}
+
         {/* Control Bar */}
+        {match && (
         <div className="sticky bottom-0 left-0 right-0 z-40 flex justify-center py-4 lg:py-6 bg-background/50 backdrop-blur-sm border-t border-border/50">
           <GlassPanel className="px-6 py-4 flex items-center gap-4">
             <button
@@ -290,6 +313,7 @@ const VideoChat: React.FC = () => {
             </button>
           </GlassPanel>
         </div>
+        )}
       </div>
 
       {/* Chat Sidebar */}

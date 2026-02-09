@@ -16,7 +16,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onAccept, onClos
     {
       icon: Shield,
       title: 'Be Respectful',
-      description: 'Treat others with kindness. No harassment, hate speech, or bullying.',
+      description: ' No harassment, hate speech, or bullying.',
     },
     {
       icon: Eye,

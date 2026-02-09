@@ -7,7 +7,7 @@ import { AppProvider } from "@/context/AppContext";
 import Landing from "./pages/Landing";
 import Lobby from "./pages/Lobby";
 import VideoChat from "./pages/VideoChat";
-import Games from "./pages/Games";
+import Games from "./pages/Games.tsx";
 import GamePlay from "./pages/GamePlay";
 import NotFound from "./pages/NotFound";
 
